@@ -61,8 +61,8 @@ class SnakeGame():
             while True:
                 x = round(random.randint(0, SCREEN_WIDTH - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
                 y = round(random.randint(0, SCREEN_HEIGHT - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
-                occupied = [(self.player['x'], self.player['y'])], self.player['tail']
-
+                occupied = [(self.player['x'], self.player['y'])] + self.player['tail']
+                print(occupied)
                 if (x, y) not in occupied:
                     self.food['x'] = x
                     self.food['y'] = y
