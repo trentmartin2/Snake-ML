@@ -1,18 +1,14 @@
 import pygame
 import random
+import numpy as np
 pygame.init()
 
 SCREEN_DIMENSIONS = [800, 600]
 CELL_SIZE = 25
 SCREEN_WIDTH = round(SCREEN_DIMENSIONS[0] // CELL_SIZE) * CELL_SIZE
 SCREEN_HEIGHT = round(SCREEN_DIMENSIONS[1] // CELL_SIZE) * CELL_SIZE
-FPS = 10
-
-win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-clock = pygame.time.Clock()
-
-pygame.display.set_caption('Snake ML')
+FPS = 60
+MOVE_DELAY = 100
 
 RED = (255, 0, 0)
 GREEN =(0, 255, 0)
@@ -20,106 +16,173 @@ BLUE = (0, 0, 255)
 WHITE =(255, 255, 255)
 BLACK = (0, 0, 0)
 
-player = {
-    'x': 100,
-    'y': 100,
-    'width': CELL_SIZE,
-    'height': CELL_SIZE,
-    'speed': CELL_SIZE,
-    'isheading': 'right',
-    'length': 1,
-    'tail': []
-}
+class SnakeGame():
+    def __init__(self):
+        self.win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.clock = pygame.time.Clock()
+        pygame.display.set_caption('Snake ML')
+        self.last_moved = pygame.time.get_ticks()
+        self.font = pygame.font.SysFont('Arial', 24)
+        self.run = True
+        self.player = {
+            'x': 100,
+            'y': 100,
+            'width': CELL_SIZE,
+            'height': CELL_SIZE,
+            'speed': CELL_SIZE,
+            'isheading': 'right',
+            'length': 1,
+            'tail': []
+        }
+        self.food = {
+            'exist': False,
+            'x': 0,
+            'y': 0,
+            'width': CELL_SIZE,
+            'height': CELL_SIZE
+        }
 
-food = {
-    'exist': False,
-    'x': 0,
-    'y': 0,
-    'width': CELL_SIZE,
-    'height': CELL_SIZE
-}
+    def refreshDisplay(self):
+        self.win.fill(BLACK)
+        score = self.font.render(f"Score: {self.player['length'] - 1}", True, WHITE)
+        if self.food['exist']:
+            pygame.draw.rect(self.win, RED, (self.food['x'], self.food['y'], self.food['width'], self.food['height']))
 
-def refreshDisplay():
-    win.fill(BLACK)
-    if food['exist']:
-        pygame.draw.rect(win, RED, (food['x'], food['y'], food['width'], food['height']))
+        pygame.draw.rect(self.win, BLUE, (self.player['x'], self.player['y'], self.player['width'], self.player['height']))
 
-    pygame.draw.rect(win, BLUE, (player['x'], player['y'], player['width'], player['height']))
+        for segment in self.player['tail']:
+            pygame.draw.rect(self.win, BLUE, (segment[0], segment[1], self.player['width'], self.player['height']))
 
-    for segment in player['tail']:
-        pygame.draw.rect(win, BLUE, (segment[0], segment[1], player['width'], player['height']))
+        self.win.blit(score, (10, 10))
+        pygame.display.update()
 
-    pygame.display.update()
+    def spawnFood(self):
+        if not self.food['exist']:
+            while True:
+                x = round(random.randint(0, SCREEN_WIDTH - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
+                y = round(random.randint(0, SCREEN_HEIGHT - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
+                occupied = [(self.player['x'], self.player['y'])], self.player['tail']
 
-run = True
+                if (x, y) not in occupied:
+                    self.food['x'] = x
+                    self.food['y'] = y
+                    self.food['exist'] = True
+                    break
 
-while run:
-    clock.tick(FPS)
+    def checkFoodCollision(self):
+        if self.player['x'] == self.food['x'] and self.player['y'] == self.food['y']:
+            self.player['length'] += 1
+            self.food['exist'] = False
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-    
-    if not food['exist']:
-        food['x'] = round(random.randint(0, SCREEN_WIDTH - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
-        food['y'] = round(random.randint(0, SCREEN_HEIGHT - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
-        food['exist'] = True
+    def getDirection(self):
+        keys = pygame.key.get_pressed()
 
-    if player['x'] == food['x'] and player['y'] == food['y']:
-        player['length'] += 1
-        food['exist'] = False
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            if self.player['length'] == 1:
+                self.player['isheading'] = 'right'
+            elif self.player['isheading'] != 'left':
+                self.player['isheading'] = 'right'
 
-    keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            if self.player['length'] == 1:
+                self.player['isheading'] = 'left'
+            elif self.player['isheading'] != 'right':
+                self.player['isheading'] = 'left'
 
-    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-        if player['length'] == 1:
-            player['isheading'] = 'right'
-        elif player['isheading'] != 'left':
-            player['isheading'] = 'right'
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            if self.player['length'] == 1:
+                self.player['isheading'] = 'up'
+            elif self.player['isheading'] != 'down':
+                self.player['isheading'] = 'up'
 
-    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-        if player['length'] == 1:
-            player['isheading'] = 'left'
-        elif player['isheading'] != 'right':
-            player['isheading'] = 'left'
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            if self.player['length'] == 1:
+                self.player['isheading'] = 'down'
+            elif self.player['isheading'] != 'up':
+                self.player['isheading'] = 'down'
 
-    if keys[pygame.K_UP] or keys[pygame.K_w]:
-        if player['length'] == 1:
-            player['isheading'] = 'up'
-        elif player['isheading'] != 'down':
-            player['isheading'] = 'up'
+    def moveEventHandler(self):
+        previous_position = [self.player['x'], self.player['y']]
+        now = pygame.time.get_ticks()
 
-    if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-        if player['length'] == 1:
-            player['isheading'] = 'down'
-        elif player['isheading'] != 'up':
-            player['isheading'] = 'down'
+        if now >= self.last_moved + MOVE_DELAY:
+            if self.player['isheading'] == 'right':
+                self.player['x'] += self.player['speed']
 
-    previous_position = [player['x'], player['y']]
+            if self.player['isheading'] == 'left':
+                self.player['x'] -= self.player['speed']
 
-    if player['isheading'] == 'right':
-        player['x'] += player['speed']
+            if self.player['isheading'] == 'up':
+                self.player['y'] -= self.player['speed']
 
-    if player['isheading'] == 'left':
-        player['x'] -= player['speed']
+            if self.player['isheading'] == 'down':
+                self.player['y'] += self.player['speed']
 
-    if player['isheading'] == 'up':
-        player['y'] -= player['speed']
+            self.player['tail'].append(previous_position)
+            if len(self.player['tail']) > self.player['length'] - 1:
+                self.player['tail'].pop(0)
 
-    if player['isheading'] == 'down':
-        player['y'] += player['speed']
+            self.last_moved = now
 
-    player['tail'].append(previous_position)
-    if len(player['tail']) > player['length'] - 1:
-        player['tail'].pop(0)
+    def getLoseCondition(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.run = False
 
-    for segment in player['tail']:
-        if player['x'] == segment[0] and player['y'] == segment[1]:
-            run = False
+        for segment in self.player['tail']:
+            if self.player['x'] == segment[0] and self.player['y'] == segment[1]:
+                self.last_moved = pygame.time.get_ticks()
+                self.font = pygame.font.SysFont('Arial', 24)
+                self.run = True
+                self.player = {
+                    'x': 100,
+                    'y': 100,
+                    'width': CELL_SIZE,
+                    'height': CELL_SIZE,
+                    'speed': CELL_SIZE,
+                    'isheading': 'right',
+                    'length': 1,
+                    'tail': []
+                }
+                self.food = {
+                    'exist': False,
+                    'x': 0,
+                    'y': 0,
+                    'width': CELL_SIZE,
+                    'height': CELL_SIZE
+                }
 
-    if player['x'] < 0 or player['x'] > SCREEN_WIDTH - CELL_SIZE or player['y'] < 0 or player['y'] > SCREEN_HEIGHT - CELL_SIZE:
-        run = False
+        if self.player['x'] < 0 or self.player['x'] > SCREEN_WIDTH - CELL_SIZE or self.player['y'] < 0 or self.player['y'] > SCREEN_HEIGHT - CELL_SIZE:
+            self.last_moved = pygame.time.get_ticks()
+            self.font = pygame.font.SysFont('Arial', 24)
+            self.run = True
+            self.player = {
+                'x': 100,
+                'y': 100,
+                'width': CELL_SIZE,
+                'height': CELL_SIZE,
+                'speed': CELL_SIZE,
+                'isheading': 'right',
+                'length': 1,
+                'tail': []
+            }
+            self.food = {
+                'exist': False,
+                'x': 0,
+                'y': 0,
+                'width': CELL_SIZE,
+                'height': CELL_SIZE
+            }
 
-    refreshDisplay()
+game = SnakeGame()
+
+while game.run:
+    game.clock.tick(FPS)
+    game.spawnFood()
+    game.checkFoodCollision()
+    game.getDirection()
+    game.moveEventHandler()
+    game.getLoseCondition()
+    game.refreshDisplay()
 
 pygame.quit()
