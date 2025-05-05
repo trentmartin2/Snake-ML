@@ -16,7 +16,7 @@ BLUE = (0, 0, 255)
 WHITE =(255, 255, 255)
 BLACK = (0, 0, 0)
 
-class SnakeGame():
+class SnakeGame:
     def __init__(self):
         self.win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
@@ -42,6 +42,26 @@ class SnakeGame():
             'height': CELL_SIZE
         }
 
+    def reset(self):
+        self.last_moved = pygame.time.get_ticks()
+        self.player = {
+            'x': 100,
+            'y': 100,
+            'width': CELL_SIZE,
+            'height': CELL_SIZE,
+            'speed': CELL_SIZE,
+            'isheading': 'right',
+            'length': 1,
+            'tail': []
+            }
+        self.food = {
+            'exist': False,
+            'x': 0,
+            'y': 0,
+            'width': CELL_SIZE,
+            'height': CELL_SIZE
+            }
+
     def refreshDisplay(self):
         self.win.fill(BLACK)
         score = self.font.render(f"Score: {self.player['length'] - 1}", True, WHITE)
@@ -62,7 +82,7 @@ class SnakeGame():
                 x = round(random.randint(0, SCREEN_WIDTH - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
                 y = round(random.randint(0, SCREEN_HEIGHT - CELL_SIZE) // CELL_SIZE) * CELL_SIZE
                 occupied = [(self.player['x'], self.player['y'])] + self.player['tail']
-                print(occupied)
+
                 if (x, y) not in occupied:
                     self.food['x'] = x
                     self.food['y'] = y
@@ -124,55 +144,23 @@ class SnakeGame():
 
             self.last_moved = now
 
+    def is_Collision(self, x, y):
+        for segment in self.player['tail']:
+            if x == segment[0] and y == segment[1]:
+                return True
+    
+        if x < 0 or y < 0 or x > SCREEN_WIDTH - CELL_SIZE or y > SCREEN_HEIGHT - CELL_SIZE:
+            return True
+        
+        return False
+
     def getLoseCondition(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.run = False
 
-        for segment in self.player['tail']:
-            if self.player['x'] == segment[0] and self.player['y'] == segment[1]:
-                self.last_moved = pygame.time.get_ticks()
-                self.font = pygame.font.SysFont('Arial', 24)
-                self.run = True
-                self.player = {
-                    'x': 100,
-                    'y': 100,
-                    'width': CELL_SIZE,
-                    'height': CELL_SIZE,
-                    'speed': CELL_SIZE,
-                    'isheading': 'right',
-                    'length': 1,
-                    'tail': []
-                }
-                self.food = {
-                    'exist': False,
-                    'x': 0,
-                    'y': 0,
-                    'width': CELL_SIZE,
-                    'height': CELL_SIZE
-                }
-
-        if self.player['x'] < 0 or self.player['x'] > SCREEN_WIDTH - CELL_SIZE or self.player['y'] < 0 or self.player['y'] > SCREEN_HEIGHT - CELL_SIZE:
-            self.last_moved = pygame.time.get_ticks()
-            self.font = pygame.font.SysFont('Arial', 24)
-            self.run = True
-            self.player = {
-                'x': 100,
-                'y': 100,
-                'width': CELL_SIZE,
-                'height': CELL_SIZE,
-                'speed': CELL_SIZE,
-                'isheading': 'right',
-                'length': 1,
-                'tail': []
-            }
-            self.food = {
-                'exist': False,
-                'x': 0,
-                'y': 0,
-                'width': CELL_SIZE,
-                'height': CELL_SIZE
-            }
+        if self.is_Collision(self.player['x'], self.player['y']):
+            self.reset()
 
 game = SnakeGame()
 
